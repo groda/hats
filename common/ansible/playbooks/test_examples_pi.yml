@@ -1,0 +1,4 @@
+- name: Run pi example from the Hadoop distribution 
+  hosts: hadoopclientnode
+  roles:
+    - test_examples_pi

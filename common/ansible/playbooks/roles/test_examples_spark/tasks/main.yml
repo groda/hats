@@ -1,0 +1,180 @@
+---
+# tasks/main.yml
+- name: Source .bashrc and check SPARK_HOME
+  shell: |
+     source ~/.bashrc
+     echo $SPARK_HOME
+  register: spark_home_output
+  changed_when: false
+
+- name: Check if SPARK_HOME is set on the remote host
+  debug:
+    msg: "SPARK_HOME on remote host is {{ spark_home_output.stdout | default('not set') }}"
+
+- name: Set SPARK_HOME fact if discovered
+  set_fact:
+    spark_home: "{{ spark_home_output.stdout }}"
+
+#- name: Fail if SPARK_HOME could not be found
+#  fail:
+#    msg: "SPARK_HOME could not be determined. Please set SPARK_HOME manually or ensure Spark is installed."
+#  when: spark_home == ""
+
+- name: Set default SPARK_HOME to /usr/lib/spark
+  set_fact:
+    spark_home: "/usr/lib/spark"
+  when: spark_home == ""
+
+- name: Check SPARK_HOME and jar with shell command
+  shell: |
+    find {{ spark_home }} -name 'spark-examples.jar' -print -quit
+  register: jar_file_shell
+  changed_when: false
+
+- name: Debug jar path from shell command
+  debug:
+    msg: "spark-examples.jar found by shell at {{ jar_file_shell.stdout }}"
+
+#- name: Find spark-examples.jar path
+#  find:
+#    paths: "{{ spark_home }}"
+#    patterns: "spark-examples.jar"
+#    recurse: yes
+#    follow: yes  # This option follows symbolic links
+#  register: jar_file
+#  failed_when: jar_file.matched == 0
+
+- name: Fail if Spark jar path for spark-examples.jar could not be found
+  fail:
+    msg: "Spark jar path could not be determined."
+  when: jar_file_shell.stdout == ""
+
+- name: Set SPARK_HOME fact if discovered
+  set_fact:
+    jar_file: "{{ jar_file_shell.stdout }}"
+
+- name: Check if spark-examples.jar was found
+  debug:
+    msg: "Found spark-examples.jar at {{ jar_file }}"
+
+- name: Create HDFS directory for examples
+  command: hdfs dfs -mkdir -p examples/src/main/resources/
+  changed_when: false  # If the directory already exists, no change will be recorded
+
+- name: Find file employees.json in SPARK_HOME
+  find:
+    paths: "{{ spark_home }}"
+    patterns: "employees.json"
+    recurse: yes
+  register: employees_json_file
+  failed_when: employees_json_file.matched == 0
+
+- name: Find file people.json in SPARK_HOME
+  find:
+    paths: "{{ spark_home }}"
+    patterns: "people.json"
+    recurse: yes
+  register: people_json_file
+  failed_when: people_json_file.matched == 0
+
+- name: Find file people.txt in SPARK_HOME
+  find:
+    paths: "{{ spark_home }}"
+    patterns: "people.txt"
+    recurse: yes
+  register: people_txt_file
+  failed_when: people_txt_file.matched == 0
+
+- name: Define file paths and names
+  set_fact:
+    datafiles:
+      - name: "employees.json"
+        path: "{{ employees_json_file.files[0].path}}"
+      - name: "people.json"
+        path: "{{ people_json_file.files[0].path}}"
+      - name: "people.txt"
+        path: "{{ people_txt_file.files[0].path}}"
+
+- name: Debug datafiles
+  debug:
+    msg: "Datafile: {{ item.name }} located at {{ item.path }}"
+  loop: "{{ datafiles }}"
+
+- name: Upload files to HDFS if not present
+  shell: |
+    if ! hdfs dfs -test -e examples/src/main/resources/{{ item.name }}; then
+      hdfs dfs -put {{ item.path }} examples/src/main/resources/
+      echo "Uploaded {{ item.name }} to HDFS."
+    else
+      echo "{{ item.name }} already exists in HDFS, skipping upload."
+    fi
+  register: hdfs_upload_results
+  loop: "{{ datafiles }}"
+
+- name: Find sample_libsvm_data.txt in SPARK_HOME
+  find:
+    paths: "{{ spark_home }}"
+    patterns: "sample_libsvm_data.txt"
+    recurse: yes
+  register: sample_libsvm_file
+  failed_when: sample_libsvm_file.matched == 0
+
+- name: Create HDFS directory for MLlib data
+  command: hdfs dfs -mkdir -p data/mllib
+  changed_when: false  # Avoid unnecessary changes if directory exists
+
+- name: Upload sample_libsvm_data.txt to HDFS
+  shell: |
+    if ! hdfs dfs -test -e data/mllib/sample_libsvm_data.txt; then
+      hdfs dfs -put {{ sample_libsvm_file.files[0].path }} data/mllib
+      echo "Uploaded sample_libsvm_data.txt to HDFS."
+    else
+      echo "sample_libsvm_data.txt file already exists in HDFS, skipping upload."
+    fi
+
+- name: Submit Java Spark SQL job 
+  # Source: https://github.com/apache/spark/blob/master/examples/src/main/java/org/apache/spark/examples/sql/JavaSparkSQLExample.java
+  shell: |
+   spark-submit --class org.apache.spark.examples.sql.JavaSparkSQLExample {{ jar_file }}
+  register: spark_job_result
+
+- name: Submit Spark job for JavaDecisionTreeRegressionExample (https://spark.apache.org/docs/latest/ml-classification-regression.html#decision-tree-regression)
+  # Docs: https://spark.apache.org/docs/latest/ml-classification-regression.html#decision-tree-regression
+  shell: |
+   spark-submit --class org.apache.spark.examples.ml.JavaDecisionTreeRegressionExample {{ jar_file }}
+  register: spark_job_result
+
+- name: Submit Spark job for JavaRandomForestRegressorExample (https://spark.apache.org/docs/latest/ml-classification-regression.html#random-forest-regression)
+  # Docs: https://spark.apache.org/docs/latest/ml-classification-regression.html#random-forest-regression
+  shell: |
+   spark-submit --class org.apache.spark.examples.ml.JavaRandomForestRegressorExample {{ jar_file }}
+  register: spark_job_result
+
+- name: Find sample_kmeans_data.txt in SPARK_HOME
+  find:
+    paths: "{{ spark_home }}"
+    patterns: "sample_kmeans_data.txt"
+    recurse: yes
+  register: sample_kmeans_file
+  failed_when: sample_kmeans_file.matched == 0
+
+- name: Create HDFS directory for MLlib data
+  command: hdfs dfs -mkdir -p data/mllib 
+  changed_when: false  # Avoid unnecessary changes if directory exists
+
+- name: Upload sample_libsvm_data.txt to HDFS
+  shell: |
+    if ! hdfs dfs -test -e data/mllib/sample_kmeans_data.txt; then
+      hdfs dfs -put {{ sample_kmeans_file.files[0].path }} data/mllib
+      echo "Uploaded sample_kmeans_data.txt to HDFS."
+    else
+      echo "sample_kmeans_data.txt file already exists in HDFS, skipping upload."
+    fi
+
+- name: Submit Spark job for JavaKMeansExample (https://spark.apache.org/docs/latest/ml-clustering.html#k-means)
+  # Docs: https://spark.apache.org/docs/latest/ml-clustering.html#k-means
+  shell: |
+   spark-submit --class org.apache.spark.examples.ml.JavaKMeansExample {{ jar_file }}
+  register: spark_job_result
+
+

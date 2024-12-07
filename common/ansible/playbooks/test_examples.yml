@@ -1,0 +1,6 @@
+- name: Run examples that come with the Hadoop distribution 
+  hosts: hadoopclientnode
+  roles:
+    - test_examples_pi
+    - test_examples_terasort
+    - test_examples_spark

@@ -1,0 +1,10 @@
+---
+# role for pinging hosts
+- name: Ping host
+  ping:
+  register: ping_result
+  retries: 3
+  delay: 10
+  until: ping_result is succeeded
+  ignore_errors: yes  # Ignore errors if ping fails after retries
+

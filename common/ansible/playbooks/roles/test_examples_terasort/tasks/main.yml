@@ -1,0 +1,21 @@
+- name: Locate the MapReduce examples jar
+  shell: "find $(which hadoop|awk -F 'bin/hadoop' '{print $1}') -name 'hadoop-mapreduce-examples.jar' -print -quit"
+  register: examples_jar
+
+- name: "Setting Time Stamp"
+  set_fact:
+    time_stamp: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+- name: Generate 100K lines of random data (the official GraySort input data set)
+  # https://github.com/naver/hadoop/blob/master/hadoop-mapreduce-project/hadoop-mapreduce-examples/src/main/java/org/apache/hadoop/examples/terasort/TeraGen.java
+  shell: "yarn jar {{ examples_jar.stdout }} teragen 100000 ansible_test_terasort_in_{{ time_stamp }}"
+
+- name: Sort the previously generated data
+  shell: "yarn jar {{ examples_jar.stdout }} terasort -Dmapreduce.terasort.num-rows=100000 ansible_test_terasort_in_{{ time_stamp }} ansible_test_terasort_out_{{ time_stamp }}"
+  register: pi_result 
+
+- name: Remove test files with timestamp from HDFS
+  shell: |
+    hadoop fs -ls  | grep -E "ansible_test_terasort_in_[0-9]{14}" | awk '{print $8}' | xargs -I {} hadoop fs -rm -r {}
+    hadoop fs -ls  | grep -E "ansible_test_terasort_out_[0-9]{14}" | awk '{print $8}' | xargs -I {} hadoop fs -rm -r {}
+

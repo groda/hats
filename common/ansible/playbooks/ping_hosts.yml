@@ -1,0 +1,7 @@
+---
+- name: Ping all hosts using a role
+  hosts: all
+  roles:
+    - ping_hosts 
+
+

@@ -1,0 +1,68 @@
+- name: Remove temporary input directory if it exists in HDFS
+  shell: "hdfs dfs -rm -r -f my_tmp_dir"
+  register: rm_output_result
+  ignore_errors: yes
+
+- name: Create directory on HDFS
+  shell: "hdfs dfs -mkdir -p my_tmp_dir"
+  register: mkdir_result
+
+- name: Output result of HDFS mkdir operation
+  debug:
+    var: mkdir_result
+
+- name: Get the current timestamp
+  set_fact:
+    timestamp: "{{ ansible_date_time.iso8601 | regex_replace('T', '_') | regex_replace(':', '') }}"
+
+- name: Download test file pg1598.txt from the Gutenberg Books collection
+  # with timestamp in the filename
+  ansible.builtin.get_url:
+    url: https://www.gutenberg.org/cache/epub/1598/pg1598.txt
+    dest: /tmp/pg1598_{{ timestamp }}.txt
+
+- name: Upload the test file to HDFS
+  shell: "hdfs dfs -put -f /tmp/pg1598_{{ timestamp }}.txt my_tmp_dir/"
+  register: put_result
+  ignore_errors: yes
+
+- name: Debug result of put operation
+  debug:
+    var: put_result
+
+- name: Remove output directory if it exists in HDFS
+  shell: "hdfs dfs -rm -r -f output_simplest"
+  register: rm_output_result 
+  ignore_errors: yes
+
+- name: Run MapReduce job (count characters in file)
+  shell: "mapred streaming -input my_tmp_dir -output output_simplest -mapper /bin/cat -reducer '/usr/bin/wc -c'"
+  register: mr_result 
+  ignore_errors: yes
+
+- name: Debug MapReduce job result
+  debug:
+    var: mr_result.stdout
+      
+- name: Check output of MapReduce job
+  shell: "hdfs dfs -cat output_simplest/part-00000"
+  register: mr_output
+  ignore_errors: yes
+
+- name: Debug MapReduce job result
+  debug:
+    var: mr_output.stdout
+      
+- name: Check if the output of MapReduce job is as expected (136719)
+  ansible.builtin.assert:
+    that: "'136719' in mr_output.stdout"
+
+- name: Remove file from HDFS
+  shell: "hdfs dfs -rm -r -f my_tmp_dir"
+  ignore_errors: yes
+
+- name: Remove file pg1598.txt from /tmp
+  ansible.builtin.file:
+    state: absent
+    path: /tmp/pg1598_{{ timestamp }}.txt
+

@@ -1,0 +1,6 @@
+---
+- name: Test HDFS filesystem
+  hosts: hadoopclientnode
+  roles:
+    - test_hdfs_config
+

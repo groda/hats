@@ -1,0 +1,59 @@
+- name: "Setting Time Stamp"
+  set_fact:
+    time_stamp: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+- name: "Create a message with timestamp"
+  set_fact:
+    file_content: "{{ time_stamp }} This is a test file for HDFS."
+
+- name: Output result of HDFS file put operation
+  debug:
+    var: time_stamp
+
+- name: Create a temporary test file on local machine
+  copy:
+    content: "{{ file_content }}"
+    dest: /tmp/test_hdfs_file{{ time_stamp }}.txt
+
+- name: Put the test file into HDFS
+  shell: "hdfs dfs -put -f /tmp/test_hdfs_file{{ time_stamp }}.txt test_hdfs_file_in_hdfs{{ time_stamp }}.txt"
+  register: put_result
+  ignore_errors: yes
+
+- name: Check if the file exists in HDFS
+  shell: "hdfs dfs -test -e test_hdfs_file_in_hdfs{{ time_stamp }}.txt"
+  register: check_file_result
+  failed_when: "'No such file or directory' in check_file_result.stderr"
+  ignore_errors: yes
+
+- name: Output result of HDFS file put operation
+  debug:
+    var: put_result
+
+- name: Output result of HDFS file existence check
+  debug:
+    var: check_file_result
+
+- name: Save content of HDFS file to a variable
+  shell:
+    cmd: "hdfs dfs -cat test_hdfs_file_in_hdfs{{ time_stamp }}.txt"
+  register: hdfs_file_content
+
+- name: Output result of HDFS file put operation
+  debug:
+    var: hdfs_file_content
+
+- name: Check that HDFS file content is the same as original file
+  ansible.builtin.assert:
+    that: "hdfs_file_content.stdout == '{{ file_content }}'"
+
+- name: Remove test file from HDFS
+  shell: "hdfs dfs -rm test_hdfs_file_in_hdfs{{ time_stamp }}.txt"
+  when: check_file_result.rc == 0
+  ignore_errors: yes
+
+- name: Remove local temporary test file
+  file:
+    path: /tmp/test_hdfs_file{{ time_stamp }}.txt
+    state: absent
+

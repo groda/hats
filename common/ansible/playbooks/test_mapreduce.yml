@@ -1,0 +1,4 @@
+- name: Test MapReduce using the streaming library
+  hosts: hadoopclientnode
+  roles:
+    - test_mapreduce

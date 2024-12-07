@@ -1,0 +1,4 @@
+- name: Run Spark examples from the Hadoop distribution 
+  hosts: hadoopclientnode
+  roles:
+    - test_examples_spark

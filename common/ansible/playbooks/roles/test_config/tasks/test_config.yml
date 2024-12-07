@@ -1,0 +1,69 @@
+- name: Check if fs.defaultFS is set correctly in core-site.xml
+  hosts: proxy_serv01
+  become: yes
+  #become_user: hdfs
+  tasks:
+    - name: Get HADOOP_CONF_DIR from mapred envvars
+      shell: "mapred envvars | grep HADOOP_CONF_DIR"
+      register: hadoop_conf_dir_cmd_output
+
+    - name: Extract HADOOP_CONF_DIR value
+      set_fact:
+        hadoop_conf_dir: "{{ hadoop_conf_dir_cmd_output.stdout.split('=')[1].strip() }}"
+
+    - name: Debug the found fs.defaultFS value
+      debug:
+        msg: "HADOOP_CONF_DIR is {{ hadoop_conf_dir }}"
+ 
+    - name: Resolve the real path of HADOOP_CONF_DIR if its a symlink
+      shell: "realpath {{ hadoop_conf_dir }}"
+      register: real_hadoop_conf_dir
+
+    - name: Debug file core_site_xml
+      debug:
+        msg: "{{ real_hadoop_conf_dir.stdout }}/core-site.xml"
+
+    - name: Set path 
+      set_fact:
+        core_site_xml_file: "{{ real_hadoop_conf_dir.stdout }}/core-site.xml"        
+    
+    - name: Debug file core_site_xml_file
+      debug:
+        msg: "{{ core_site_xml_file }}"
+
+    - name: Check if core-site.xml exists
+      stat:
+        path: "{{ core_site_xml_file }}"
+      register: core_site_xml
+
+    - name: Fail if core-site.xml is not found
+      fail:
+        msg: "The file core-site.xml was not found in {{ hadoop_conf_dir }}."
+      when: not core_site_xml.stat.exists
+
+    - name: Parse core-site.xml and check fs.defaultFS property
+      xml:
+        path: "{{ core_site_xml_file }}"
+        xpath: "/configuration/property[name='fs.defaultFS']/value"
+        content: text
+      register: fs_defaultFS
+
+    - name: Set expected value for fs.defaultFS (adjust this to your expected value)
+      ## TODO: hard-coded hostname, should change hosts file to name serv01 "namenode" but ok for now
+      set_fact:
+        expected_fs_defaultFS: "hdfs://serv01:8020"
+
+    - name: Check if fs.defaultFS is set correctly
+      fail:
+        msg: "The fs.defaultFS property is not set correctly. Expected: {{ expected_fs_defaultFS }}, Found: {{ fs_defaultFS.matches[0] }}"
+      when: fs_defaultFS.matches[0].value != expected_fs_defaultFS
+
+    - name: Debug the found fs.defaultFS value
+      debug:
+        msg: "fs.defaultFS is set correctly to {{ fs_defaultFS.matches[0] }}"
+      when: fs_defaultFS.matches[0].value == expected_fs_defaultFS
+
+
+
+
+
