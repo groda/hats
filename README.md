@@ -18,7 +18,6 @@ Run the script without arguments to get an usage message:
 
 ```
 ./hats-smoke.sh
-
 ```
 ### Smoke-test your own Hadoop cluster
 
