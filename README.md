@@ -116,7 +116,7 @@ If you set up such a passwordless ssh connection, Ansible will not ask you to en
 ### Step-by-step if you do not have a key
 
 1. create a private/public key (e.g. `~/.ssh/id_rsa` with public key `~/.ssh/id_rsa.pub` ) by using the command `ssh-keygen` (just type it, don't worry, you'll be prompted for the file where you want to save your key, etc.)
-2. copy the public key to the account that you want to use for testing (e.g. `g3testadbs24`):
+2. copy the public key to the account that you want to use for testing (e.g. `testuser`):
    ```
    ssh-copy-id -i ~/.ssh/id_rsa.pub testuser@xx.yy.zz.ww
    ```
