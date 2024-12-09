@@ -1,4 +1,16 @@
-# HATS: Hadoop Ansible Test Suite
+# HATS: Hadoop Ansible Test Suite 
+
+HATS is a versatile, menu-driven suite of shell scripts designed to streamline testing on Hadoop YARN clusters. By leveraging Ansible playbooks, it provides a seamless way to execute and manage a variety of tests, ensuring flexibility and ease of use for both interactive and automated workflows.  
+
+**Key Features:** 
+- **Menu-Driven Interface**: Select specific tests to run interactively via a user-friendly menu.  
+- **Non-Interactive Mode**: Automate testing with command-line arguments for CI/CD pipelines or scheduled tasks.  
+- **Comprehensive Test Coverage**: Includes smoke tests for critical components like HDFS, MapReduce, and Spark, ensuring cluster health and functionality.
+- **Configuration File Validation:** Leverages the Python lxml library to test and validate configuration files for correctness and compliance.
+- **Extensible Framework**: Add new Ansible playbooks or roles to expand the suite’s testing capabilities.  
+- **Performance Testing (Planned)**: Future support for benchmarking and evaluating cluster performance.  
+
+HATS simplifies the management of cluster testing while maintaining flexibility, making it an indispensable tool for developers and administrators working with Hadoop ecosystems.
 
 ## Smoke tests
 
