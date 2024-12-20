@@ -1,4 +1,16 @@
-# HATS: Hadoop Ansible Test Suite
+# HATS: Hadoop Ansible Test Suite 
+
+HATS is a versatile, menu-driven suite of shell scripts designed to streamline testing on Hadoop YARN clusters. By leveraging Ansible playbooks, it provides a seamless way to execute and manage a variety of tests, ensuring flexibility and ease of use for both interactive and automated workflows.  
+
+**Key Features:** 
+- **Menu-Driven Interface**: Select specific tests to run interactively via a user-friendly menu.  
+- **Non-Interactive Mode**: Automate testing with command-line arguments for CI/CD pipelines or scheduled tasks.  
+- **Comprehensive Test Coverage**: Includes smoke tests for critical components like HDFS, MapReduce, and Spark, ensuring cluster health and functionality.
+- **Configuration File Validation:** Leverages the Python lxml library to test and validate configuration files for correctness and compliance.
+- **Extensible Framework**: Add new Ansible playbooks or roles to expand the suite’s testing capabilities.  
+- **Performance Testing (Planned)**: Future support for benchmarking and evaluating cluster performance.  
+
+HATS simplifies the management of cluster testing while maintaining flexibility, making it an indispensable tool for developers and administrators working with Hadoop ecosystems.
 
 ## Smoke tests
 
@@ -18,7 +30,6 @@ Run the script without arguments to get an usage message:
 
 ```
 ./hats-smoke.sh
-
 ```
 ### Smoke-test your own Hadoop cluster
 
@@ -116,7 +127,7 @@ If you set up such a passwordless ssh connection, Ansible will not ask you to en
 ### Step-by-step if you do not have a key
 
 1. create a private/public key (e.g. `~/.ssh/id_rsa` with public key `~/.ssh/id_rsa.pub` ) by using the command `ssh-keygen` (just type it, don't worry, you'll be prompted for the file where you want to save your key, etc.)
-2. copy the public key to the account that you want to use for testing (e.g. `g3testadbs24`):
+2. copy the public key to the account that you want to use for testing (e.g. `testuser`):
    ```
    ssh-copy-id -i ~/.ssh/id_rsa.pub testuser@xx.yy.zz.ww
    ```
