@@ -35,7 +35,7 @@ interactive=1
 while getopts n OPTION 
 do
   case $OPTION in
-  i)
+  n)
      interactive=0
      ;;
   \?)
