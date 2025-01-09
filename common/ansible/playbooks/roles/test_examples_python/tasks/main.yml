@@ -1,0 +1,48 @@
+---
+# tasks/main.yml
+- name: Source .bashrc and check SPARK_HOME
+  shell: |
+     which spark-submit
+  register: which_spark_submit
+  changed_when: false
+
+- name: Check if spark-submit can be found
+  debug:
+    msg: "spark-submit on remote host is {{ which_spark_submit.stdout | default('not set') }}"
+
+- name: Set SPARK_HOME fact if discovered
+  set_fact:
+    spark_submit: "{{ which_spark_submit.stdout }}"
+
+- name: Set default SPARK_HOME to /usr/bin/spark-submit
+  set_fact:
+    spark_submit: "/usr/bin/spark-submit"
+  when: spark_submit == ""
+
+- name: Locate the Python examples jar
+  shell: echo {{ spark_submit }}|awk -F 'bin/spark' '{print $1"lib/spark/examples/src/main/python"}'
+  register: examples_dir
+
+- name: Debug examples_dir
+  debug:
+    var: examples_dir.stdout
+
+- name: Run pi.py Spark example
+  shell: |
+   {{ spark_submit}} {{ examples_dir.stdout }}/pi.py 2>/dev/null
+  args:
+    executable: /bin/bash
+  register: pi_result 
+
+- name: Debug pi example job result
+  debug:
+    var: pi_result.stdout
+
+- name: Check if the output of pi.py is ~3
+  ansible.builtin.assert:
+    that:
+      - pi_result.stdout.startswith('Pi is roughly 3.')
+    fail_msg: "The string '{{ pi_result.stdout }}' does not match expected result"
+    success_msg: "The string '{{ pi_result.stdout }}' matches expected result"
+      
+

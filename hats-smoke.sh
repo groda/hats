@@ -104,6 +104,7 @@ check_status
 tests=(
  "common/ansible/playbooks/test_hdfs.yml|Test HDFS"
  "common/ansible/playbooks/test_mapreduce.yml|Test MapReduce"
+ "common/ansible/playbooks/test_examples_python.yml|Test Python examples"
  "common/ansible/playbooks/test_examples.yml|Test examples"
  "common/ansible/playbooks/test_config.yml|Test config"
 )

@@ -1,3 +1,4 @@
+---
 - name: Locate the MapReduce examples jar
   shell: "find $(which hadoop|awk -F 'bin/hadoop' '{print $1}') -name 'hadoop-mapreduce-examples.jar' -print -quit"
   register: examples_jar
