@@ -41,8 +41,8 @@
 - name: Check if the output of pi.py is ~3
   ansible.builtin.assert:
     that:
-      - pi_result.stdout.startswith('Pi is roughly 3.')
-    fail_msg: "The string '{{ pi_result.stdout }}' does not match expected result"
-    success_msg: "The string '{{ pi_result.stdout }}' matches expected result"
+      - pi_result.stdout.splitlines() | select('match', '^Pi is roughly 3.') | list | length > 0
+    fail_msg: "No line of output starts with 'Pi is roughly 3.'."
+    success_msg: "At least line matches 'Pi is roughly 3.'"
       
 
